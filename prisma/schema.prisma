@@ -5,7 +5,8 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 model Account {
@@ -37,13 +38,20 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?     @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
+  workspaces    Workspace[]
+  issuedTo1297  e1297[]     @relation("ISSUED_TO")
+  issuedBy1297  e1297[]     @relation("ISSUED_BY")
+  fysa1297      e1297[]     @relation("FYSA")
+  workspaceId   String?
+
+  @@index([name])
 }
 
 model VerificationToken {
@@ -52,4 +60,59 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Workspace {
+  id          String           @id @default(cuid())
+  name        String
+  users       User[]
+  e1297       e1297[]
+  collections ItemCollection[]
+  items       Item[]
+}
+
+model Item {
+  id           String          @id @default(cuid())
+  name         String
+  type         String
+  nsn          String?
+  description  String?
+  e1297        e1297?          @relation(fields: [e1297Id], references: [id])
+  e1297Id      String?
+  collection   ItemCollection? @relation(fields: [collectionId], references: [id])
+  collectionId String?
+  workspace    Workspace       @relation(fields: [workspaceId], references: [id])
+  workspaceId  String
+  dateCreated  DateTime        @default(now())
+  dateUpdated  DateTime        @updatedAt
+}
+
+model ItemCollection {
+  id          String    @id @default(cuid())
+  name        String
+  type        String
+  description String?
+  items       Item[]
+  dateCreated DateTime  @default(now())
+  dateUpdated DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  e1297       e1297?    @relation(fields: [e1297Id], references: [id])
+  e1297Id     String?
+}
+
+model e1297 {
+  id           String           @id @default(cuid())
+  title        String
+  issuedTo     User[]           @relation("ISSUED_TO")
+  issuedBy     User             @relation("ISSUED_BY", fields: [issuedById], references: [id])
+  issuedById   String
+  dateIssued   DateTime         @default(now())
+  dateUpdated  DateTime         @updatedAt
+  dateReturned DateTime
+  items        Item[]
+  collections  ItemCollection[]
+  fysa         User[]           @relation("FYSA")
+  Workspace    Workspace        @relation(fields: [workspaceId], references: [id])
+  workspaceId  String
 }
