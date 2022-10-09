@@ -11,11 +11,12 @@
 
 // https://github.com/prisma/prisma/discussions/10037
 import { PrismaClient } from "@prisma/client";
+import chalk from "chalk";
 
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === "production") {
-  prisma = new PrismaClient();
+  prisma = new PrismaClient({ errorFormat: "pretty" });
 } else {
   let globalWithPrisma = global as typeof globalThis & {
     prisma: PrismaClient;
@@ -33,6 +34,20 @@ prisma.$use(async (params, next) => {
 
   const result = await next(params);
   // See results here
+  return result;
+});
+
+prisma.$use(async (params, next) => {
+  const before = Date.now();
+
+  const result = await next(params);
+
+  const after = Date.now();
+
+  const now = new Date();
+
+  console.log(chalk.grey(`[ ${now.toISOString()} ]`), chalk.green(`Query ${params.model}.${params.action} took ${after - before}ms`));
+
   return result;
 });
 
